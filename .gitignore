@@ -1,0 +1,22 @@
+# Arquivo de credenciais da API do Google. NUNCA comitar!
+credentials.json
+
+# Arquivo de variáveis de ambiente. NUNCA comitar!
+.env
+
+# Pasta para uploads temporários de arquivos.
+/uploads/
+
+# Arquivos de cache do Python.
+__pycache__/
+*.pyc
+
+# Pasta do ambiente virtual (adicione o nome da sua se for diferente).
+venv/
+.venv/
+env/
+*.env
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
