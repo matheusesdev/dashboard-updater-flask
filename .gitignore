@@ -8,7 +8,7 @@ credentials.json
 /uploads/
 
 # Arquivos de imagem PNG.
-/static/LOGO.png
+*.png
 
 
 # Arquivos de cache do Python.
