@@ -7,6 +7,10 @@ credentials.json
 # Pasta para uploads temporários de arquivos.
 /uploads/
 
+# Arquivos de imagem PNG.
+/static/LOGO.png
+
+
 # Arquivos de cache do Python.
 __pycache__/
 *.pyc
