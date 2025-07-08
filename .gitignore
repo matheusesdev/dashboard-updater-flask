@@ -1,13 +1,78 @@
-# Arquivo de credenciais da API do Google. NUNCA comitar!
+# === ARQUIVOS SENSÍVEIS - SEGURANÇA ===
+# Credenciais do Google Sheets
 credentials.json
+*.json
 
-# Arquivo de variáveis de ambiente. NUNCA comitar!
+# Variáveis de ambiente
 .env
+.env.local
+.env.production
+.env.staging
+.env.development
 
-# Pasta para uploads temporários de arquivos.
-/uploads/
+# === PYTHON ===
+# Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 
-# Arquivos de imagem PNG.
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# === ARQUIVOS TEMPORÁRIOS ===
+# Uploads de arquivos
+uploads/
+temp/
+tmp/
+
+# Logs
+*.log
+logs/
+
+# === SISTEMA OPERACIONAL ===
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+
+# === IDEs ===
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
 /static/LOGO.png
 
 

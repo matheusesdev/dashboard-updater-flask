@@ -1,23 +1,32 @@
-# Atualizador de Dashboard VCA
+# 📊 Atualizador de Dashboard VCA
 
-Esta é uma aplicação web Flask projetada para sincronizar dados de uma planilha local (Excel ou CSV) com uma planilha do Google Sheets, atuando como um atualizador de dashboard.
+Sistema web para sincronização automática de planilhas com dashboard do Google Sheets da VCA Construtora.
 
-## Funcionalidades
+## 🎯 Funcionalidades
 
--   Interface web simples para upload de arquivos.
--   Suporte para arquivos `.xlsx`, `.xls` e `.csv`.
--   Comparação inteligente entre a planilha local e o Google Sheets.
--   **Atualiza** registros existentes no dashboard.
--   **Adiciona** novos registros que não existem no dashboard.
--   Gera um log detalhado do processo na interface.
+- ✅ Upload de planilhas Excel (.xlsx, .xls) e CSV
+- ✅ Sincronização automática com Google Sheets
+- ✅ Interface web moderna e responsiva
+- ✅ Log de status em tempo real
+- ✅ Validação e processamento de dados
+- ✅ Limpeza automática de arquivos temporários
 
-## Como Executar o Projeto
+## 🛠️ Tecnologias
 
-Siga os passos abaixo para configurar e rodar a aplicação localmente.
+- **Backend**: Python 3.x + Flask
+- **Frontend**: HTML5, CSS3, JavaScript (JetBrains Mono)
+- **Integração**: Google Sheets API via gspread
+- **Processamento**: pandas, openpyxl
 
-### Pré-requisitos
+## 🚀 Instalação e Configuração
 
--   Python 3.x
+### 1. Clone o repositório
+```bash
+git clone https://github.com/seu-usuario/atualizador-web.git
+cd atualizador-web
+```
+
+### 2. Crie um ambiente virtual
 -   Conta de Serviço do Google Cloud com a API do Google Sheets e Google Drive ativadas.
 
 ### 1. Clonar o Repositório
