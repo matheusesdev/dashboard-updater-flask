@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atualizador de Dashboard VCA</title>
+    <title>Atualizador de Dashboard VCA v2.0</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- CSRF Token (se habilitado) -->
+    {% if csrf_token %}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% endif %}
 </head>
 <body>
 
@@ -18,126 +23,503 @@
                  class="logo"
                  onerror="this.style.display='none'; document.getElementById('logo-text').style.display='block';">
             <div id="logo-text" style="display: none; color: white; font-size: 24px; font-weight: bold;">VCA Construtora</div>
+            
+            <!-- Status da aplicação -->
+            <div class="status-indicator">
+                <div id="connection-status" class="status-dot status-loading" title="Verificando conexão..."></div>
+                <span id="status-text">Carregando...</span>
+            </div>
         </div>
 
         <div class="card-body">
-            <h1>Atualizador de Dashboard</h1>
-            <p class="subtitle">Sincronize a planilha base com o dashboard do Google Sheets.</p>
+            <h1>Atualizador de Dashboard v2.0</h1>
+            <p class="subtitle">Sincronize planilhas com o dashboard do Google Sheets de forma segura e eficiente.</p>
+
+            <!-- Informações de arquivo -->
+            <div id="file-info" class="file-info" style="display: none;">
+                <h3>Arquivo Selecionado:</h3>
+                <div class="file-details">
+                    <span id="file-name"></span>
+                    <span id="file-size"></span>
+                    <span id="file-type"></span>
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div id="progress-container" class="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <div id="progress-text" class="progress-text">0%</div>
+            </div>
 
             <form id="upload-form">
                 <label for="file-input" class="file-label">
-                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
                     <span id="file-label-text">Clique para selecionar a planilha</span>
+                    <div class="file-formats">Formatos aceitos: .xlsx, .xls, .csv, .ods (máx. 200MB)</div>
                 </label>
-                <input type="file" id="file-input" name="file" accept=".xlsx, .xls, .csv" required>
+                <input type="file" id="file-input" name="file" accept=".xlsx,.xls,.csv,.ods" required>
                 
-                <button type="submit" id="submit-button" class="btn-primary">
+                <!-- Opções avançadas -->
+                <div class="advanced-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="async-processing" name="async" value="true">
+                        <span class="checkmark"></span>
+                        Processamento em segundo plano (recomendado para arquivos grandes)
+                    </label>
+                </div>
+                
+                <button type="submit" id="submit-button" class="btn-primary" disabled>
                     <span class="btn-text">Iniciar Sincronização</span>
                     <div class="spinner"></div>
                 </button>
+                
+                <button type="button" id="cancel-button" class="btn-secondary" style="display: none;">
+                    Cancelar
+                </button>
             </form>
+
+            <!-- Resultados -->
+            <div id="result-container" class="result-container" style="display: none;">
+                <div id="result-content"></div>
+            </div>
         </div>
 
         <div class="card-footer">
-            <h3>Log de Status</h3>
-            <div id="log-output">
+            <div class="footer-header">
+                <h3>Log de Status</h3>
+                <div class="log-controls">
+                    <button id="clear-log" class="btn-text-small" type="button">Limpar Log</button>
+                    <button id="download-log" class="btn-text-small" type="button">Baixar Log</button>
+                </div>
+            </div>
+            
+            <div id="log-output" class="log-output">
                 <div class="log-entry log-info">
-                    <svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <span>Aguardando início do processo...</span>
+                    <svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span class="log-timestamp">[{{ moment().format('HH:mm:ss') if moment else '' }}]</span>
+                    <span class="log-message">Sistema inicializado. Aguardando seleção de arquivo...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer da aplicação -->
+        <div class="app-footer">
+            <img src="{{ url_for('static', filename='LOGO.png') }}" 
+                 alt="Logo VCA" 
+                 class="footer-logo"
+                 onerror="this.style.display='none';">
+            <div class="footer-info">
+                <span>© 2025 VCA Construtora | Atualizador Dashboard v2.0</span>
+                <div class="footer-links">
+                    <a href="/health" target="_blank">Status do Sistema</a>
+                    <a href="/metrics" target="_blank">Métricas</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <footer class="main-footer">
-        <div class="footer-line"></div>
-        <img src="{{ url_for('static', filename='LOGO.png') }}" alt="Logo VCA" class="footer-logo">
-        <p class="footer-name">Matheus Santos</p>
-        <p class="footer-info">
-            <span>Subsetor de Sistemas</span>
-            <span class="separator">|</span>
-            <span>Setor Imobiliário</span>
-        </p>
-    </footer>
+    <!-- Modal de confirmação -->
+    <div id="confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirmar Operação</h3>
+                <span class="close" id="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-confirm" class="btn-primary">Confirmar</button>
+                <button id="modal-cancel" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- ===== SCRIPT ATUALIZADO PARA O VISUAL DE LOG ANTIGO ===== -->
+    <!-- JavaScript -->
     <script>
-        const form = document.getElementById('upload-form');
-        const fileInput = document.getElementById('file-input');
-        const submitButton = document.getElementById('submit-button');
-        const btnText = document.querySelector('.btn-text');
-        const spinner = document.querySelector('.spinner');
-        const logBox = document.getElementById('log-output');
-        const fileLabelText = document.getElementById('file-label-text');
-
-        const icons = {
-            success: `<svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
-            error: `<svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
-            info: `<svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
+        // Configuração global
+        const APP_CONFIG = {
+            maxFileSize: 200 * 1024 * 1024, // 200MB
+            allowedExtensions: ['.xlsx', '.xls', '.csv', '.ods'],
+            healthCheckInterval: 30000, // 30 segundos
+            statusCheckInterval: 2000, // 2 segundos para tasks assíncronas
         };
 
-        function addLogEntry(message) {
-            if (!message.trim()) return;
+        // Estado da aplicação
+        let appState = {
+            isUploading: false,
+            currentTask: null,
+            selectedFile: null,
+            isHealthy: false
+        };
 
-            let type = 'info';
-            let icon = icons.info;
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            checkApplicationHealth();
+            setInterval(checkApplicationHealth, APP_CONFIG.healthCheckInterval);
+        });
 
-            // Define o tipo e o ícone com base em palavras-chave
-            if (message.includes('[ATUALIZAÇÃO]') || message.includes('[NOVO]') || message.includes('✅')) {
-                type = 'success';
-                icon = icons.success;
-            } else if (message.includes('❌') || message.includes('ERRO')) {
-                type = 'error';
-                icon = icons.error;
+        // Inicializar aplicação
+        function initializeApp() {
+            const fileInput = document.getElementById('file-input');
+            const uploadForm = document.getElementById('upload-form');
+            const submitButton = document.getElementById('submit-button');
+            
+            // Event listeners
+            fileInput.addEventListener('change', handleFileSelection);
+            uploadForm.addEventListener('submit', handleFormSubmit);
+            document.getElementById('cancel-button').addEventListener('click', cancelOperation);
+            document.getElementById('clear-log').addEventListener('click', clearLog);
+            document.getElementById('download-log').addEventListener('click', downloadLog);
+            
+            // CSRF Token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                fetch.defaults = {
+                    headers: {
+                        'X-CSRFToken': csrfToken.getAttribute('content')
+                    }
+                };
             }
             
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry log-${type}`;
-            logEntry.innerHTML = `${icon}<span>${message}</span>`;
-            logBox.appendChild(logEntry);
+            addLogEntry('Sistema pronto para uso.', 'info');
         }
 
-        fileInput.addEventListener('change', () => {
-            fileLabelText.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : 'Clique para selecionar a planilha';
-        });
-
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            if (fileInput.files.length === 0) {
-                logBox.innerHTML = '';
-                addLogEntry('❌ ERRO: Por favor, selecione um arquivo primeiro.');
-                return;
-            }
-
-            submitButton.disabled = true;
-            btnText.style.display = 'none';
-            spinner.style.display = 'block';
-            logBox.innerHTML = '';
-            addLogEntry('Iniciando processo de sincronização...');
-
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
+        // Verificar saúde da aplicação
+        async function checkApplicationHealth() {
             try {
-                const response = await fetch('/upload', { method: 'POST', body: formData });
-                const result = await response.json();
+                const response = await fetch('/health');
+                const data = await response.json();
                 
-                logBox.innerHTML = '';
-                if (result.success) {
-                    result.log.split('\n').forEach(addLogEntry);
+                const statusDot = document.getElementById('connection-status');
+                const statusText = document.getElementById('status-text');
+                
+                if (data.status === 'healthy') {
+                    statusDot.className = 'status-dot status-healthy';
+                    statusText.textContent = 'Sistema Online';
+                    appState.isHealthy = true;
+                } else if (data.status === 'degraded') {
+                    statusDot.className = 'status-dot status-warning';
+                    statusText.textContent = 'Sistema com Problemas';
+                    appState.isHealthy = false;
+                    addLogEntry(`Serviços com problemas: ${data.issues?.join(', ')}`, 'warning');
                 } else {
-                    addLogEntry(`❌ ERRO: ${result.error}`);
+                    throw new Error('Sistema não saudável');
                 }
             } catch (error) {
-                logBox.innerHTML = '';
-                addLogEntry(`❌ ERRO DE CONEXÃO: Não foi possível conectar ao servidor.`);
-            } finally {
-                submitButton.disabled = false;
-                spinner.style.display = 'none';
-                btnText.style.display = 'block';
-                logBox.scrollTop = logBox.scrollHeight;
+                const statusDot = document.getElementById('connection-status');
+                const statusText = document.getElementById('status-text');
+                statusDot.className = 'status-dot status-error';
+                statusText.textContent = 'Sistema Offline';
+                appState.isHealthy = false;
+                addLogEntry('Erro na comunicação com o servidor', 'error');
             }
-        });
+        }
+
+        // Manipular seleção de arquivo
+        function handleFileSelection(event) {
+            const file = event.target.files[0];
+            const submitButton = document.getElementById('submit-button');
+            const fileInfo = document.getElementById('file-info');
+            
+            if (!file) {
+                submitButton.disabled = true;
+                fileInfo.style.display = 'none';
+                appState.selectedFile = null;
+                document.getElementById('file-label-text').textContent = 'Clique para selecionar a planilha';
+                return;
+            }
+            
+            // Validar arquivo
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                addLogEntry(`Erro na validação: ${validation.error}`, 'error');
+                submitButton.disabled = true;
+                fileInfo.style.display = 'none';
+                return;
+            }
+            
+            // Arquivo válido
+            appState.selectedFile = file;
+            submitButton.disabled = false;
+            document.getElementById('file-label-text').textContent = file.name;
+            
+            // Mostrar informações do arquivo
+            document.getElementById('file-name').textContent = file.name;
+            document.getElementById('file-size').textContent = formatFileSize(file.size);
+            document.getElementById('file-type').textContent = getFileExtension(file.name);
+            fileInfo.style.display = 'block';
+            
+            addLogEntry(`Arquivo selecionado: ${file.name} (${formatFileSize(file.size)})`, 'success');
+        }
+
+        // Validar arquivo
+        function validateFile(file) {
+            // Verificar extensão
+            const extension = getFileExtension(file.name).toLowerCase();
+            if (!APP_CONFIG.allowedExtensions.includes(extension)) {
+                return {
+                    valid: false,
+                    error: `Extensão ${extension} não permitida. Use: ${APP_CONFIG.allowedExtensions.join(', ')}`
+                };
+            }
+            
+            // Verificar tamanho
+            if (file.size > APP_CONFIG.maxFileSize) {
+                return {
+                    valid: false,
+                    error: `Arquivo muito grande. Máximo: ${formatFileSize(APP_CONFIG.maxFileSize)}`
+                };
+            }
+            
+            // Verificar se não está vazio
+            if (file.size === 0) {
+                return {
+                    valid: false,
+                    error: 'Arquivo está vazio'
+                };
+            }
+            
+            return { valid: true };
+        }
+
+        // Manipular envio do formulário
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            if (!appState.selectedFile) {
+                addLogEntry('Nenhum arquivo selecionado', 'error');
+                return;
+            }
+            
+            if (!appState.isHealthy) {
+                if (!confirm('O sistema não está totalmente saudável. Deseja continuar mesmo assim?')) {
+                    return;
+                }
+            }
+            
+            const asyncProcessing = document.getElementById('async-processing').checked;
+            
+            setUploadingState(true);
+            addLogEntry('Iniciando upload...', 'info');
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', appState.selectedFile);
+                if (asyncProcessing) {
+                    formData.append('async', 'true');
+                }
+                
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.async && data.task_id) {
+                        // Processamento assíncrono
+                        appState.currentTask = data.task_id;
+                        addLogEntry(`Arquivo enviado. ID da tarefa: ${data.task_id}`, 'success');
+                        monitorAsyncTask(data.task_id);
+                    } else {
+                        // Processamento síncrono
+                        addLogEntry('Arquivo processado com sucesso!', 'success');
+                        showResult(data.result);
+                        setUploadingState(false);
+                    }
+                } else {
+                    throw new Error(data.error || 'Erro desconhecido');
+                }
+                
+            } catch (error) {
+                addLogEntry(`Erro no upload: ${error.message}`, 'error');
+                setUploadingState(false);
+            }
+        }
+
+        // Monitorar tarefa assíncrona
+        async function monitorAsyncTask(taskId) {
+            const checkInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/status/${taskId}`);
+                    const data = await response.json();
+                    
+                    if (data.state === 'PENDING') {
+                        addLogEntry('Tarefa na fila...', 'info');
+                    } else if (data.state === 'PROGRESS') {
+                        addLogEntry(data.status || 'Processando...', 'info');
+                        updateProgress(50); // Simular progresso
+                    } else if (data.state === 'SUCCESS') {
+                        addLogEntry('Processamento concluído!', 'success');
+                        showResult(data.result);
+                        setUploadingState(false);
+                        clearInterval(checkInterval);
+                        updateProgress(100);
+                    } else if (data.state === 'FAILURE') {
+                        addLogEntry(`Erro no processamento: ${data.error}`, 'error');
+                        setUploadingState(false);
+                        clearInterval(checkInterval);
+                        updateProgress(0);
+                    }
+                } catch (error) {
+                    addLogEntry(`Erro ao verificar status: ${error.message}`, 'error');
+                    clearInterval(checkInterval);
+                    setUploadingState(false);
+                }
+            }, APP_CONFIG.statusCheckInterval);
+        }
+
+        // Definir estado de upload
+        function setUploadingState(isUploading) {
+            appState.isUploading = isUploading;
+            const submitButton = document.getElementById('submit-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const fileInput = document.getElementById('file-input');
+            const progressContainer = document.getElementById('progress-container');
+            
+            if (isUploading) {
+                submitButton.disabled = true;
+                submitButton.classList.add('loading');
+                cancelButton.style.display = 'inline-block';
+                fileInput.disabled = true;
+                progressContainer.style.display = 'block';
+                updateProgress(0);
+            } else {
+                submitButton.disabled = !appState.selectedFile;
+                submitButton.classList.remove('loading');
+                cancelButton.style.display = 'none';
+                fileInput.disabled = false;
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // Atualizar progresso
+        function updateProgress(percent) {
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            
+            progressFill.style.width = `${percent}%`;
+            progressText.textContent = `${Math.round(percent)}%`;
+        }
+
+        // Cancelar operação
+        function cancelOperation() {
+            if (appState.currentTask) {
+                // Tentar cancelar task (se implementado no backend)
+                addLogEntry('Cancelamento solicitado...', 'warning');
+            }
+            setUploadingState(false);
+            appState.currentTask = null;
+        }
+
+        // Mostrar resultado
+        function showResult(result) {
+            const resultContainer = document.getElementById('result-container');
+            const resultContent = document.getElementById('result-content');
+            
+            let html = '<div class="result-success"><h4>✅ Processamento Concluído</h4>';
+            
+            if (result.sheets_url) {
+                html += `<p><strong>Planilha criada:</strong> <a href="${result.sheets_url}" target="_blank">Abrir no Google Sheets</a></p>`;
+            }
+            
+            if (result.processed_rows) {
+                html += `<p><strong>Linhas processadas:</strong> ${result.processed_rows}</p>`;
+            }
+            
+            html += '</div>';
+            
+            resultContent.innerHTML = html;
+            resultContainer.style.display = 'block';
+        }
+
+        // Adicionar entrada no log
+        function addLogEntry(message, type = 'info') {
+            const logOutput = document.getElementById('log-output');
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            
+            const iconMap = {
+                'info': '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>',
+                'success': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>',
+                'warning': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>',
+                'error': '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>'
+            };
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `
+                <svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    ${iconMap[type]}
+                </svg>
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-message">${message}</span>
+            `;
+            
+            logOutput.appendChild(entry);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        // Limpar log
+        function clearLog() {
+            const logOutput = document.getElementById('log-output');
+            logOutput.innerHTML = '';
+            addLogEntry('Log limpo pelo usuário', 'info');
+        }
+
+        // Baixar log
+        function downloadLog() {
+            const logEntries = document.querySelectorAll('.log-entry');
+            let logText = 'Log do Atualizador Dashboard VCA\n';
+            logText += '=====================================\n\n';
+            
+            logEntries.forEach(entry => {
+                const timestamp = entry.querySelector('.log-timestamp').textContent;
+                const message = entry.querySelector('.log-message').textContent;
+                const type = entry.className.includes('log-error') ? 'ERROR' : 
+                           entry.className.includes('log-warning') ? 'WARNING' :
+                           entry.className.includes('log-success') ? 'SUCCESS' : 'INFO';
+                
+                logText += `${timestamp} [${type}] ${message}\n`;
+            });
+            
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `log_dashboard_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Funções utilitárias
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function getFileExtension(filename) {
+            return filename.slice(filename.lastIndexOf('.'));
+        }
     </script>
 </body>
 </html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atualizador de Dashboard VCA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="card">
+        <div class="card-header">
+            <img src="{{ url_for('static', filename='LOGO.png') }}" 
+                 alt="Logo VCA" 
+                 class="logo"
+                 onerror="this.style.display='none'; document.getElementById('logo-text').style.display='block';">
+            <div id="logo-text" style="display: none; color: white; font-size: 24px; font-weight: bold;">VCA Construtora</div>
+        </div>
+
+        <div class="card-body">
+            <h1>Atualizador de Dashboard</h1>
+            <p class="subtitle">Sincronize a planilha base com o dashboard do Google Sheets.</p>
+
+            <form id="upload-form">
+                <label for="file-input" class="file-label">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span id="file-label-text">Clique para selecionar a planilha</span>
+                </label>
+                <input type="file" id="file-input" name="file" accept=".xlsx, .xls, .csv" required>
+                
+                <button type="submit" id="submit-button" class="btn-primary">
+                    <span class="btn-text">Iniciar Sincronização</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+        </div>
+
+        <div class="card-footer">
+            <h3>Log de Status</h3>
+            <div id="log-output">
+                <div class="log-entry log-info">
+                    <svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <span>Aguardando início do processo...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="footer-line"></div>
+        <img src="{{ url_for('static', filename='LOGO.png') }}" alt="Logo VCA" class="footer-logo">
+        <p class="footer-name">Matheus Santos</p>
+        <p class="footer-info">
+            <span>Subsetor de Sistemas</span>
+            <span class="separator">|</span>
+            <span>Setor Imobiliário</span>
+        </p>
+    </footer>
+
+    <!-- ===== SCRIPT ATUALIZADO PARA O VISUAL DE LOG ANTIGO ===== -->
+    <script>
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const submitButton = document.getElementById('submit-button');
+        const btnText = document.querySelector('.btn-text');
+        const spinner = document.querySelector('.spinner');
+        const logBox = document.getElementById('log-output');
+        const fileLabelText = document.getElementById('file-label-text');
+
+        const icons = {
+            success: `<svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+            error: `<svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+            info: `<svg class="log-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
+        };
+
+        function addLogEntry(message) {
+            if (!message.trim()) return;
+
+            let type = 'info';
+            let icon = icons.info;
+
+            // Define o tipo e o ícone com base em palavras-chave
+            if (message.includes('[ATUALIZAÇÃO]') || message.includes('[NOVO]') || message.includes('✅')) {
+                type = 'success';
+                icon = icons.success;
+            } else if (message.includes('❌') || message.includes('ERRO')) {
+                type = 'error';
+                icon = icons.error;
+            }
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `${icon}<span>${message}</span>`;
+            logBox.appendChild(logEntry);
+        }
+
+        fileInput.addEventListener('change', () => {
+            fileLabelText.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : 'Clique para selecionar a planilha';
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (fileInput.files.length === 0) {
+                logBox.innerHTML = '';
+                addLogEntry('❌ ERRO: Por favor, selecione um arquivo primeiro.');
+                return;
+            }
+
+            submitButton.disabled = true;
+            btnText.style.display = 'none';
+            spinner.style.display = 'block';
+            logBox.innerHTML = '';
+            addLogEntry('Iniciando processo de sincronização...');
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+                const result = await response.json();
+                
+                logBox.innerHTML = '';
+                if (result.success) {
+                    result.log.split('\n').forEach(addLogEntry);
+                } else {
+                    addLogEntry(`❌ ERRO: ${result.error}`);
+                }
+            } catch (error) {
+                logBox.innerHTML = '';
+                addLogEntry(`❌ ERRO DE CONEXÃO: Não foi possível conectar ao servidor.`);
+            } finally {
+                submitButton.disabled = false;
+                spinner.style.display = 'none';
+                btnText.style.display = 'block';
+                logBox.scrollTop = logBox.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html>
