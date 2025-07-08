@@ -19,6 +19,16 @@ pip install -r requirements.txt
 echo "📁 Criando pasta uploads..."
 mkdir -p uploads
 
+# Verificar arquivos estáticos
+echo "🖼️ Verificando arquivos estáticos..."
+ls -la static/
+echo "📊 Arquivos em static/:"
+for file in static/*; do
+    if [ -f "$file" ]; then
+        echo "  - $(basename "$file") ($(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo "?") bytes)"
+    fi
+done
+
 # Verificar instalações críticas
 echo "✅ Verificando instalações..."
 python -c "import flask; print(f'Flask: {flask.__version__}')"

@@ -13,7 +13,11 @@
 
     <div class="card">
         <div class="card-header">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo VCA" class="logo">
+            <img src="{{ url_for('static', filename='LOGO.png') }}" 
+                 alt="Logo VCA" 
+                 class="logo"
+                 onerror="this.style.display='none'; document.getElementById('logo-text').style.display='block';">
+            <div id="logo-text" style="display: none; color: white; font-size: 24px; font-weight: bold;">VCA Construtora</div>
         </div>
 
         <div class="card-body">

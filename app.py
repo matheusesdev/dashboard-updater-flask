@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, url_for
 import os
 from iniciar_processo import iniciar_processo_de_atualizacao
 from dotenv import load_dotenv # Importa a função para carregar o .env
@@ -13,6 +13,13 @@ load_dotenv()
 app = Flask(__name__)
 
 # --- CONFIGURAÇÃO ---
+# Configuração para servir arquivos estáticos em produção
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 ano cache
+if os.environ.get('FLASK_ENV') == 'production':
+    # Em produção, garantir que arquivos estáticos sejam servidos
+    app.static_url_path = '/static'
+    app.static_folder = 'static'
+
 # Define uma pasta para onde os arquivos serão enviados temporariamente
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -22,6 +29,21 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 # --- ROTAS DA APLICAÇÃO ---
+
+# Rota para teste de arquivos estáticos
+@app.route('/test-static')
+def test_static():
+    """
+    Rota de teste para verificar se arquivos estáticos estão acessíveis
+    """
+    import os
+    static_files = []
+    for file in os.listdir(app.static_folder):
+        static_files.append({
+            'name': file,
+            'url': url_for('static', filename=file)
+        })
+    return jsonify({'static_files': static_files})
 
 # Rota principal (página inicial): '/'
 @app.route('/')

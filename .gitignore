@@ -77,3 +77,6 @@ $RECYCLE.BIN/
 # === IMAGENS ===
 # Manter apenas o LOGO.png necessário
 # *.png
+
+# === ARQUIVOS TEMPORÁRIOS DE CONVERSÃO ===
+logo_base64.txt
