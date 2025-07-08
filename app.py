@@ -75,10 +75,12 @@ def upload_file():
 # --- PONTO DE ENTRADA DO PROGRAMA ---
 # Este bloco só é executado quando você roda "python app.py" diretamente
 if __name__ == '__main__':
-    # Inicia o servidor de desenvolvimento do Flask
-    # host='0.0.0.0' permite que a aplicação seja acessada por outros
-    # dispositivos na mesma rede (útil para testes em celulares, etc.).
-    # port=5000 é a porta padrão.
-    # debug=True ativa o modo de depuração, que reinicia o servidor
-    # automaticamente quando você salva uma alteração no código.
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Configurações para produção e desenvolvimento
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') == 'development'
+    
+    # Inicia o servidor
+    # host='0.0.0.0' permite que a aplicação seja acessada externamente
+    # port vem da variável de ambiente (Render usa 10000)
+    # debug=False em produção por segurança
+    app.run(host='0.0.0.0', port=port, debug=debug)

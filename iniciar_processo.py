@@ -3,6 +3,9 @@
 import pandas as pd
 import gspread
 import os
+import json
+import base64
+import tempfile
 
 def iniciar_processo_de_atualizacao(caminho_planilha_base):
     log_messages = []
@@ -10,9 +13,9 @@ def iniciar_processo_de_atualizacao(caminho_planilha_base):
     try:
         log_messages.append("Iniciando processo de sincronização...")
         
-        # --- Configurações ---
-        NOME_PLANILHA_GOOGLE = 'IMOBILIARIAS CARUARU 03.06.2025'
-        NOME_ABA_GOOGLE = 'BaseDeDados'
+        # --- Configurações (usando variáveis de ambiente quando disponível) ---
+        NOME_PLANILHA_GOOGLE = os.getenv('GOOGLE_SHEET_NAME', 'IMOBILIARIAS CARUARU 03.06.2025')
+        NOME_ABA_GOOGLE = os.getenv('GOOGLE_SHEET_TAB', 'BaseDeDados')
         ARQUIVO_CREDENCIAIS = 'credentials.json'
         COLUNAS_PARA_LER_DA_BASE = ['Nome fantasia', 'Corretores', 'Estado', 'Cidade', 'Ativa no painel']
         MAPA_COLUNAS_DIRETAS = {'Nome fantasia': 'Imobiliária', 'Corretores': 'Quantidade de Corretores', 'Estado': 'Estado', 'Cidade': 'Cidade'}
@@ -42,7 +45,37 @@ def iniciar_processo_de_atualizacao(caminho_planilha_base):
         
         # ETAPA 2: Conectar ao Google Sheets
         log_messages.append("Autenticando com a API do Google...")
-        gc = gspread.service_account(filename=ARQUIVO_CREDENCIAIS)
+        
+        # Verificar se estamos em produção (Render) ou desenvolvimento
+        credentials_base64 = os.getenv('GOOGLE_CREDENTIALS_BASE64')
+        
+        if credentials_base64:
+            # Produção: usar credenciais do Base64
+            log_messages.append("Usando credenciais do ambiente de produção...")
+            
+            try:
+                # Decodificar Base64 e criar arquivo temporário
+                credentials_data = base64.b64decode(credentials_base64)
+                
+                # Criar arquivo temporário para as credenciais
+                with tempfile.NamedTemporaryFile(mode='w+b', suffix='.json', delete=False) as temp_file:
+                    temp_file.write(credentials_data)
+                    temp_credentials_path = temp_file.name
+                
+                # Usar arquivo temporário
+                gc = gspread.service_account(filename=temp_credentials_path)
+                
+                # Limpar arquivo temporário
+                os.unlink(temp_credentials_path)
+                
+            except Exception as e:
+                log_messages.append(f"❌ Erro ao processar credenciais Base64: {str(e)}")
+                raise
+        else:
+            # Desenvolvimento: usar arquivo local
+            log_messages.append("Usando credenciais do arquivo local...")
+            gc = gspread.service_account(filename=ARQUIVO_CREDENCIAIS)
+        
         sh = gc.open(NOME_PLANILHA_GOOGLE)
         worksheet = sh.worksheet(NOME_ABA_GOOGLE)
         log_messages.append(f"Conectado à aba '{NOME_ABA_GOOGLE}'.")
