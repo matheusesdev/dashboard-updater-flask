@@ -73,19 +73,7 @@ $RECYCLE.BIN/
 .vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
-/static/LOGO.png
 
-
-# Arquivos de cache do Python.
-__pycache__/
-*.pyc
-
-# Pasta do ambiente virtual (adicione o nome da sua se for diferente).
-venv/
-.venv/
-env/
-*.env
-
-# Arquivos de sistema operacional
-.DS_Store
-Thumbs.db
+# === IMAGENS ===
+# Manter apenas o LOGO.png necessário
+# *.png
